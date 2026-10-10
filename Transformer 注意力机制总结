@@ -1,0 +1,28 @@
+```markdown
+# 笔记 #2：Transformer 注意力机制
+
+## 1. 为什么需要 Attention
+- RNN/LSTM 的问题：信息沿时间步串行传递，序列越长前文越被"稀释"；句首到句尾的信息要经过 $O(n)$ 步才到达；难并行，GPU 利用率低。
+- Attention 的解决思路：让每个 token 直接访问序列中所有 token，按内容相关性加权聚合。任意两 token 路径长度 $O(1)$，且矩阵运算天然并行。
+
+## 2. Self-Attention 的核心
+- Q、K、V 是什么：
+  1.Query $Q = X W_Q$（低维 $d_k$）：当前 token 在问"我在找什么"；
+  2.Key   $K = X W_K$（低维 $d_k$）：每个 token 自报"我能提供什么"；
+  3.Value $V = X W_V$（高维 $d_{\text{embed}}$）：实际加到对方 embedding 上的内容；
+  4.三个矩阵都是可学习的，机制把"匹配方式"也交给训练学。
+  
+- 计算过程：
+  1. 由 $X$ 经三套线性变换得到 $Q, K, V$；
+  2. $Q K^\top / \sqrt{d_k}$ → $n \times n$ 原始分数；
+  3. 列方向 softmax → attention pattern（每列和 = 1）；
+  4. pattern × $V$ → 加权聚合后的新表征
+
+## 3. 我作为测试人能用在哪
+- 想法 1：设计更狠的 prompt 评测用例——attention 对位置极度敏感（U 形偏好、两端权重高、中段易丢失 → "Lost in the Middle"）。构造超长 prompt 把关键约束藏在中间，专门验证模型在压力下的召回。
+- 想法 2：用 attention 可视化辅助 bug 定位——LLM 应用答错时，dump 出 attention pattern 看模型"看错"了谁（是否丢否定词、指代混淆、引用错位），比纯黑盒 prompt 调参更可解释。
+- 想法 3：做模型选型技术尽调——用 头数 × 层数 × $d_{\text{embed}}$ × $d_k$ 反推大致参数量级与上下文上限，结合业务 QPS / 显存预算做选型，不需要真跑训练就能初步判断是否值得接入。
+
+## 4. 一句话总结
+- Attention 之所以统治 LLM 时代，不是机制多巧妙，而是把"匹配 → 加权 → 聚合"参数化后又极致并行——这正是规模能 scale 得起来的工程基础。
+```
